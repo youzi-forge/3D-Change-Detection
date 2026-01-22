@@ -1,0 +1,12 @@
+{
+  "split": "train",
+  "reference_scan_id": "<reference_scan_id>",
+  "rescan_scan_id": "<rescan_scan_id>",
+  "change_meta_counts": {
+    "rigid": 0,
+    "removed": 0,
+    "nonrigid": 0
+  },
+  "source": "example; run scripts/inspect_3rscan.py --write-smoke-config to generate a local config"
+}
+

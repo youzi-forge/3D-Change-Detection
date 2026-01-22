@@ -1,0 +1,26 @@
+# Local/private docs & large datasets (do not push)
+/CHANGE_DETECTION_BASELINE_SPEC.md
+/Datasets/
+/3RScan-master/
+
+# OS / editor
+.DS_Store
+.vscode/
+
+# Python cache / virtualenvs
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Local configs / outputs
+outputs/
+reports/
+configs/**/*.local.*
+

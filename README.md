@@ -1,0 +1,47 @@
+# Multi-session 3D Change Detection Baseline (3RScan)
+
+Reproducible, **CUDA-free** baseline pipeline for **multi-session 3D change detection** on the 3RScan dataset:
+
+- Metadata-based alignment (`T` from `3RScan.json`) + optional small ICP refine
+- QC metrics + reliability gate (to handle partial overlap / drift)
+- Comparable-region definition (only claim “unchanged” where both scans are comparable)
+- Geometry-only change heatmaps + object-level change attribution
+- Per-pair 1-page HTML reports + summary tables (ablation-friendly)
+
+This repo **does not** include the dataset. You must download 3RScan yourself under their Terms of Use.
+
+## Dataset layout (expected)
+
+Example layout that works out-of-the-box with the scripts below:
+
+```
+Datasets/
+  3RScan.json
+  3RScan/
+    <scanId>/
+      labels.instances.annotated.v2.ply
+      semseg.v2.json
+      mesh.refined.v2.obj
+      mesh.refined.mtl
+      mesh.refined_0.png
+      sequence.zip
+```
+
+Notes:
+- The dataset is **flat by scanId**. Reference↔rescan relationships live in `3RScan.json`.
+- Some **test rescans** may not include semantic files; this pipeline targets **train/validation** for object-level attribution.
+  (In `3RScan.json`, the split field is typically `train`, `validation`, `test`.)
+
+## Quickstart (data sanity check)
+
+1) Put `3RScan.json` under `Datasets/` and scans under `Datasets/3RScan/<scanId>/`.
+
+2) Run the local inspector (picks a valid train/validation reference+rescan pair if available):
+
+```bash
+python3 scripts/inspect_3rscan.py --datasets-root Datasets --write-smoke-config
+```
+
+This writes a local smoke-pair config:
+
+- `configs/pairs/smoke_pair.local.json`
