@@ -45,3 +45,17 @@ python3 scripts/inspect_3rscan.py --datasets-root Datasets --write-smoke-config
 This writes a local smoke-pair config:
 
 - `configs/pairs/smoke_pair.local.json`
+
+## Run a single pair
+
+If you have a local smoke pair config:
+
+```bash
+python3 scripts/run_pair.py --datasets-root Datasets --pair-config configs/pairs/smoke_pair.local.json
+```
+
+Artifacts are written under `outputs/pairs/<reference>__<rescan>/`:
+- `qc.json`, `alignment.json`
+- `heatmap_ref.ply`, `heatmap_rescan.ply`
+- `objects.csv`
+- `report.html` (with `figures/*.png`)
