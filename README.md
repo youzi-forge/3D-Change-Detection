@@ -59,3 +59,17 @@ Artifacts are written under `outputs/pairs/<reference>__<rescan>/`:
 - `heatmap_ref.ply`, `heatmap_rescan.ply`
 - `objects.csv`
 - `report.html` (with `figures/*.png`)
+
+## Run a batch and summarize
+
+Run a small batch (default: picks pairs with the most weak-labeled changes from the chosen split):
+
+```bash
+python3 scripts/run_batch.py --datasets-root Datasets --split train --limit 20 --resume
+```
+
+Then generate a summary table and a short Markdown report:
+
+```bash
+python3 scripts/make_summary.py --datasets-root Datasets --out-root outputs --write-md
+```
