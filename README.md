@@ -73,3 +73,9 @@ Then generate a summary table and a short Markdown report:
 ```bash
 python3 scripts/make_summary.py --datasets-root Datasets --out-root outputs --write-md
 ```
+
+## Tests
+
+```bash
+python3 -m unittest discover -s tests
+```
