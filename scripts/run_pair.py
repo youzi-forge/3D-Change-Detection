@@ -407,6 +407,9 @@ def main() -> int:
     parser.add_argument("--top-k", type=int, default=15, help="Number of objects to report.")
     parser.add_argument("--plot-max-points", type=int, default=60000, help="Max points to plot per figure (subsampled).")
     parser.add_argument("--scale-sample-size", type=int, default=8000, help="Sample size used for translation-scale detection.")
+    parser.add_argument("--skip-ply", action="store_true", help="Skip writing heatmap PLY files.")
+    parser.add_argument("--skip-figures", action="store_true", help="Skip writing PNG figures.")
+    parser.add_argument("--skip-report", action="store_true", help="Skip writing the HTML report.")
 
     args = parser.parse_args()
 
@@ -571,8 +574,10 @@ def main() -> int:
 
     pair_id = f"{reference_id}__{rescan_id}"
     out_pair = out_root / "pairs" / pair_id
+    out_pair.mkdir(parents=True, exist_ok=True)
     figures_dir = out_pair / "figures"
-    figures_dir.mkdir(parents=True, exist_ok=True)
+    if not args.skip_figures:
+        figures_dir.mkdir(parents=True, exist_ok=True)
 
     alignment_payload = {
         "reference_scan_id": reference_id,
@@ -614,65 +619,66 @@ def main() -> int:
 
     _write_objects_csv(out_pair / "objects.csv", rows)
 
-    # Export heatmap PLYs.
-    colors_ref = _colors_from_heat(heat_ref, comparable=observed_ref)
-    colors_res = _colors_from_heat(heat_res, comparable=observed_res)
+    if not args.skip_ply:
+        # Export heatmap PLYs.
+        colors_ref = _colors_from_heat(heat_ref, comparable=observed_ref)
+        colors_res = _colors_from_heat(heat_res, comparable=observed_res)
 
-    write_ply_ascii(
-        out_pair / "heatmap_ref.ply",
-        points=ref_points_ds,
-        colors_rgb=colors_ref,
-        extra_properties={
-            "distance": d_ref_vis,
-            "heat": heat_ref,
-            "observed": observed_ref.astype(np.uint8),
-            "close": close_ref.astype(np.uint8),
-            "changed": (observed_ref & (d_ref_vis > float(args.tau))).astype(np.uint8),
-            "objectId": ref_object_ids_ds.astype(np.int64),
-        },
-        comments=[f"tau_m={float(args.tau)}", f"overlap_delta_m={float(args.overlap_delta)}"],
-    )
-    write_ply_ascii(
-        out_pair / "heatmap_rescan.ply",
-        points=res_points_ds,
-        colors_rgb=colors_res,
-        extra_properties={
-            "distance": d_res_vis,
-            "heat": heat_res,
-            "observed": observed_res.astype(np.uint8),
-            "close": close_res.astype(np.uint8),
-            "changed": (observed_res & (d_res_vis > float(args.tau))).astype(np.uint8),
-            "objectId": res_object_ids_ds.astype(np.int64),
-        },
-        comments=[f"tau_m={float(args.tau)}", f"overlap_delta_m={float(args.overlap_delta)}"],
-    )
+        write_ply_ascii(
+            out_pair / "heatmap_ref.ply",
+            points=ref_points_ds,
+            colors_rgb=colors_ref,
+            extra_properties={
+                "distance": d_ref_vis,
+                "heat": heat_ref,
+                "observed": observed_ref.astype(np.uint8),
+                "close": close_ref.astype(np.uint8),
+                "changed": (observed_ref & (d_ref_vis > float(args.tau))).astype(np.uint8),
+                "objectId": ref_object_ids_ds.astype(np.int64),
+            },
+            comments=[f"tau_m={float(args.tau)}", f"overlap_delta_m={float(args.overlap_delta)}"],
+        )
+        write_ply_ascii(
+            out_pair / "heatmap_rescan.ply",
+            points=res_points_ds,
+            colors_rgb=colors_res,
+            extra_properties={
+                "distance": d_res_vis,
+                "heat": heat_res,
+                "observed": observed_res.astype(np.uint8),
+                "close": close_res.astype(np.uint8),
+                "changed": (observed_res & (d_res_vis > float(args.tau))).astype(np.uint8),
+                "objectId": res_object_ids_ds.astype(np.int64),
+            },
+            comments=[f"tau_m={float(args.tau)}", f"overlap_delta_m={float(args.overlap_delta)}"],
+        )
 
-    # Figures
     overlay_png = figures_dir / "overlay.png"
     heat_ref_png = figures_dir / "heatmap_reference.png"
     heat_res_png = figures_dir / "heatmap_rescan.png"
-    _save_three_view_overlay_png(
-        overlay_png,
-        ref_points=ref_points_ds,
-        res_points=res_points_ds,
-        max_points=int(args.plot_max_points),
-    )
-    _save_three_view_heatmap_png(
-        heat_ref_png,
-        points=ref_points_ds,
-        heat=heat_ref,
-        comparable=observed_ref,
-        max_points=int(args.plot_max_points),
-        title_prefix="Reference",
-    )
-    _save_three_view_heatmap_png(
-        heat_res_png,
-        points=res_points_ds,
-        heat=heat_res,
-        comparable=observed_res,
-        max_points=int(args.plot_max_points),
-        title_prefix="Rescan",
-    )
+    if not args.skip_figures:
+        _save_three_view_overlay_png(
+            overlay_png,
+            ref_points=ref_points_ds,
+            res_points=res_points_ds,
+            max_points=int(args.plot_max_points),
+        )
+        _save_three_view_heatmap_png(
+            heat_ref_png,
+            points=ref_points_ds,
+            heat=heat_ref,
+            comparable=observed_ref,
+            max_points=int(args.plot_max_points),
+            title_prefix="Reference",
+        )
+        _save_three_view_heatmap_png(
+            heat_res_png,
+            points=res_points_ds,
+            heat=heat_res,
+            comparable=observed_res,
+            max_points=int(args.plot_max_points),
+            title_prefix="Rescan",
+        )
 
     # Report
     title = f"3RScan pair report: {reference_id} vs {rescan_id}"
@@ -699,18 +705,22 @@ def main() -> int:
         "translation_scale_applied": scale,
         "runtime_sec": f"{qc_payload['runtime_sec']:.2f}",
     }
-    _write_report_html(
-        out_pair / "report.html",
-        title=title,
-        summary=summary,
-        object_rows=rows,
-        images=[
-            (str((Path("figures") / overlay_png.name).as_posix()), "Aligned overlay (three orthographic views)"),
-            (str((Path("figures") / heat_ref_png.name).as_posix()), "Reference heatmap (three orthographic views)"),
-            (str((Path("figures") / heat_res_png.name).as_posix()), "Rescan heatmap (three orthographic views)"),
-        ],
-        notes=notes,
-    )
+    if not args.skip_report:
+        images: list[tuple[str, str]] = []
+        if not args.skip_figures:
+            images = [
+                (str((Path("figures") / overlay_png.name).as_posix()), "Aligned overlay (three orthographic views)"),
+                (str((Path("figures") / heat_ref_png.name).as_posix()), "Reference heatmap (three orthographic views)"),
+                (str((Path("figures") / heat_res_png.name).as_posix()), "Rescan heatmap (three orthographic views)"),
+            ]
+        _write_report_html(
+            out_pair / "report.html",
+            title=title,
+            summary=summary,
+            object_rows=rows,
+            images=images,
+            notes=notes,
+        )
 
     print("Wrote:", out_pair)
     return 0

@@ -74,6 +74,14 @@ Then generate a summary table and a short Markdown report:
 python3 scripts/make_summary.py --datasets-root Datasets --out-root outputs --write-md
 ```
 
+## Ablations
+
+Run a small `voxel_size x tau` ablation (metrics-only; skips PLY/figures/report):
+
+```bash
+python3 scripts/run_ablation.py --datasets-root Datasets --out-root outputs/ablation --split train --limit 20 --voxel-sizes 0.01,0.02,0.05 --taus 0.05,0.1,0.2 --resume
+```
+
 ## Tests
 
 ```bash
