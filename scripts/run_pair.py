@@ -382,8 +382,11 @@ def _save_three_view_heatmap_png(
         ax.set_title(title)
         ax.set_aspect("equal", adjustable="box")
         ax.axis("off")
-    fig.colorbar(sc, ax=axes.ravel().tolist(), shrink=0.7, location="right", pad=0.01)
-    fig.subplots_adjust(left=0.02, right=0.98, top=0.90, bottom=0.02, wspace=0.02)
+
+    # Reserve a dedicated axis for the colorbar to avoid overlapping the rightmost panel.
+    fig.subplots_adjust(left=0.02, right=0.90, top=0.90, bottom=0.02, wspace=0.02)
+    cax = fig.add_axes([0.92, 0.15, 0.015, 0.70])
+    fig.colorbar(sc, cax=cax)
     fig.savefig(path)
     plt.close(fig)
 
