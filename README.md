@@ -2,7 +2,7 @@
 
 Reproducible, **CUDA-free** baseline pipeline for **multi-session 3D change detection** on the 3RScan dataset:
 
-- Metadata-based alignment (`T` from `3RScan.json`) + optional small ICP refine
+- Metadata-based alignment (`T` from `3RScan.json`) with automatic translation-scale handling (m vs mm)
 - QC metrics + reliability gate (to handle partial overlap / drift)
 - Comparable-region definition (only claim “unchanged” where both scans are comparable)
 - Geometry-only change heatmaps + object-level change attribution
@@ -29,6 +29,7 @@ Datasets/
 
 Notes:
 - The dataset is **flat by scanId**. Reference↔rescan relationships live in `3RScan.json`.
+- `labels.instances.annotated.v2.ply` can contain `objectId==0` (background/unlabeled). This pipeline excludes it from "Top Objects".
 - Some **test rescans** may not include semantic files; this pipeline targets **train/validation** for object-level attribution.
   (In `3RScan.json`, the split field is typically `train`, `validation`, `test`.)
 
