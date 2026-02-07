@@ -531,6 +531,8 @@ def main() -> int:
     all_object_ids = sorted(set(ref_stats.keys()) | set(res_stats.keys()))
     rows: list[dict[str, Any]] = []
     for oid in all_object_ids:
+        if int(oid) <= 0:
+            continue
         r = ref_stats.get(oid, {})
         s = res_stats.get(oid, {})
         score = max(float(r.get("ratio_changed_observed", 0.0)), float(s.get("ratio_changed_observed", 0.0)))
@@ -690,6 +692,7 @@ def main() -> int:
     if not reliable:
         notes.append(f"Marked as unreliable by gate: {gate_reason}")
     notes.append("Weak labels are treated as reference signals, not absolute ground truth.")
+    notes.append("objectId==0 is treated as background/unlabeled and excluded from Top Objects.")
     notes.append(f"Weak-label counts: rigid={len(rescan_meta.rigid)} removed={len(rescan_meta.removed)} nonrigid={len(rescan_meta.nonrigid)}")
 
     summary = {

@@ -42,9 +42,12 @@ def _read_objects_csv(path: Path) -> list[int]:
             if "objectId" not in row:
                 continue
             try:
-                out.append(int(row["objectId"]))
+                oid = int(row["objectId"])
             except Exception:
                 continue
+            if oid <= 0:
+                continue
+            out.append(oid)
     return out
 
 
@@ -176,4 +179,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
