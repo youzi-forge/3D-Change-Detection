@@ -98,6 +98,15 @@ def _heat_from_distance(dist: np.ndarray, *, tau: float) -> np.ndarray:
     return heat
 
 
+def _ratio(numer: np.ndarray, denom: np.ndarray) -> float:
+    numer = np.asarray(numer, dtype=bool)
+    denom = np.asarray(denom, dtype=bool)
+    d = int(np.sum(denom))
+    if d <= 0:
+        return 0.0
+    return float(np.sum(numer)) / float(d)
+
+
 def _colors_from_heat(heat: np.ndarray, *, comparable: np.ndarray) -> np.ndarray:
     import matplotlib
 
@@ -510,6 +519,17 @@ def main() -> int:
     heat_ref = _heat_from_distance(d_ref_vis, tau=float(args.tau))
     heat_res = _heat_from_distance(d_res_vis, tau=float(args.tau))
 
+    tau_m = float(args.tau)
+    unchanged_ref = observed_ref & (d_ref_vis <= tau_m)
+    unchanged_res = observed_res & (d_res_vis <= tau_m)
+    changed_ref = observed_ref & (d_ref_vis > tau_m)
+    changed_res = observed_res & (d_res_vis > tau_m)
+
+    unchanged_ratio_ref = _ratio(unchanged_ref, observed_ref)
+    unchanged_ratio_res = _ratio(unchanged_res, observed_res)
+    changed_ratio_ref = _ratio(changed_ref, observed_ref)
+    changed_ratio_res = _ratio(changed_res, observed_res)
+
     ref_labels = _load_semseg_labels(ref_semseg)
     res_labels = _load_semseg_labels(res_semseg)
 
@@ -599,16 +619,28 @@ def main() -> int:
         "reference_scan_id": reference_id,
         "rescan_scan_id": rescan_id,
         "split": rescan_meta.split,
+        "overlap_min": float(args.overlap_min),
+        "heat_cap_factor": float(args.heat_cap_factor),
         "voxel_size_m": float(args.voxel_size),
         "tau_m": float(args.tau),
         "overlap_delta_m": float(args.overlap_delta),
         "nn_search_radius_m": max_radius,
         "translation_scale_applied": scale,
+        "min_object_support": int(args.min_object_support),
+        "min_object_total": int(args.min_object_total),
+        "move_translation_min": float(args.move_translation_min),
+        "top_k": int(args.top_k),
+        "plot_max_points": int(args.plot_max_points),
+        "scale_sample_size": int(args.scale_sample_size),
         "comparable_ratio_ref": comparable_ratio_ref,
         "comparable_ratio_rescan": comparable_ratio_res,
         "overlap_ref": overlap_ref,
         "overlap_rescan": overlap_res,
         "overlap_mean": overlap_mean,
+        "unchanged_ratio_ref": unchanged_ratio_ref,
+        "unchanged_ratio_rescan": unchanged_ratio_res,
+        "changed_ratio_ref": changed_ratio_ref,
+        "changed_ratio_rescan": changed_ratio_res,
         "reliable": bool(reliable),
         "gate_reason": gate_reason,
         "point_counts": {
@@ -691,6 +723,8 @@ def main() -> int:
     notes = []
     if not reliable:
         notes.append(f"Marked as unreliable by gate: {gate_reason}")
+    notes.append("Heatmaps show normalized NN distance (clip(distance/tau, 0..1)) for observed points.")
+    notes.append("Gray points are unobserved (no NN within nn_search_radius_m).")
     notes.append("Weak labels are treated as reference signals, not absolute ground truth.")
     notes.append("objectId==0 is treated as background/unlabeled and excluded from Top Objects.")
     notes.append(f"Weak-label counts: rigid={len(rescan_meta.rigid)} removed={len(rescan_meta.removed)} nonrigid={len(rescan_meta.nonrigid)}")
@@ -705,9 +739,13 @@ def main() -> int:
         "overlap_ref": f"{overlap_ref:.3f}",
         "overlap_rescan": f"{overlap_res:.3f}",
         "overlap_mean": f"{overlap_mean:.3f}",
+        "unchanged_ratio_ref_obs": f"{unchanged_ratio_ref:.3f}",
+        "unchanged_ratio_rescan_obs": f"{unchanged_ratio_res:.3f}",
         "voxel_size_m": float(args.voxel_size),
         "tau_m": float(args.tau),
         "overlap_delta_m": float(args.overlap_delta),
+        "nn_search_radius_m": float(max_radius),
+        "overlap_min": float(args.overlap_min),
         "translation_scale_applied": scale,
         "runtime_sec": f"{qc_payload['runtime_sec']:.2f}",
     }
