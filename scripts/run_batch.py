@@ -65,6 +65,34 @@ def _collect_pairs(
     return out
 
 
+def _apply_selection_constraints(
+    pairs: list[Pair],
+    *,
+    max_per_reference: int,
+    max_references: int,
+) -> list[Pair]:
+    max_per_reference = int(max_per_reference)
+    max_references = int(max_references)
+    if max_per_reference <= 0 and max_references <= 0:
+        return pairs
+
+    selected: list[Pair] = []
+    per_ref: dict[str, int] = {}
+    refs: set[str] = set()
+
+    for p in pairs:
+        ref = p.reference_scan_id
+        if max_references > 0 and ref not in refs and len(refs) >= max_references:
+            continue
+        if max_per_reference > 0 and per_ref.get(ref, 0) >= max_per_reference:
+            continue
+        selected.append(p)
+        refs.add(ref)
+        per_ref[ref] = per_ref.get(ref, 0) + 1
+
+    return selected
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run scripts/run_pair.py for a batch of 3RScan pairs.")
     parser.add_argument("--datasets-root", default="Datasets", help="Datasets root containing 3RScan.json and scans.")
@@ -73,7 +101,11 @@ def main() -> int:
     parser.add_argument("--strategy", choices=["most_changes", "random"], default="most_changes", help="Pair selection strategy.")
     parser.add_argument("--limit", type=int, default=20, help="Max number of pairs to run.")
     parser.add_argument("--seed", type=int, default=0, help="Random seed (for strategy=random).")
+    parser.add_argument("--max-per-reference", type=int, default=0, help="Max pairs per reference scan id (0=unlimited).")
+    parser.add_argument("--max-references", type=int, default=0, help="Max unique reference scan ids (0=unlimited).")
     parser.add_argument("--resume", action="store_true", help="Skip pairs that already have qc.json under the output directory.")
+    parser.add_argument("--dry-run", action="store_true", help="Print selected pairs and exit without running.")
+    parser.add_argument("--write-pairs", help="Write selected pair ids to the given JSON file and exit.")
 
     # Pass-through parameters for run_pair.py
     parser.add_argument("--voxel-size", type=float, default=0.02)
@@ -111,8 +143,34 @@ def main() -> int:
         rng = __import__("random").Random(int(args.seed))
         rng.shuffle(pairs)
 
+    pairs = _apply_selection_constraints(
+        pairs,
+        max_per_reference=int(args.max_per_reference),
+        max_references=int(args.max_references),
+    )
+
     pairs = pairs[: max(0, int(args.limit))]
     print(f"Selected {len(pairs)} pairs (strategy={args.strategy}, split={args.split}).")
+
+    if args.dry_run or args.write_pairs:
+        payload = [
+            {
+                "reference_scan_id": p.reference_scan_id,
+                "rescan_scan_id": p.rescan_scan_id,
+                "split": p.split,
+                "change_count": p.change_count,
+            }
+            for p in pairs
+        ]
+        if args.write_pairs:
+            out_path = Path(args.write_pairs)
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+            print("Wrote:", out_path)
+        else:
+            for p in pairs:
+                print(p.pair_id, "changes=", p.change_count)
+        return 0
 
     run_pair = REPO_ROOT / "scripts" / "run_pair.py"
     success = 0
