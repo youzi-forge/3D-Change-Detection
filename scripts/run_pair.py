@@ -19,6 +19,7 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from cd3d.grid_nn import nearest_neighbors_within_radius, overlap_ratio  # noqa: E402
 from cd3d.ply_ascii import read_3rscan_instance_ply, write_ply_ascii  # noqa: E402
+from cd3d.semseg_v2 import load_semseg_labels  # noqa: E402
 from cd3d.three_rscan_meta import (  # noqa: E402
     find_3rscan_json,
     get_rescan_meta,
@@ -40,22 +41,6 @@ def _load_pair_config(path: Path) -> PairConfig:
         reference_scan_id=str(payload["reference_scan_id"]),
         rescan_scan_id=str(payload["rescan_scan_id"]),
     )
-
-
-def _load_semseg_labels(path: Path) -> dict[int, str]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    out: dict[int, str] = {}
-    for g in payload.get("segGroups", []):
-        try:
-            object_id = int(g.get("objectId"))
-        except Exception:
-            continue
-        label = g.get("label")
-        if isinstance(label, str) and label:
-            out[object_id] = label
-        else:
-            out[object_id] = "unknown"
-    return out
 
 
 def _pick_translation_scale(
@@ -530,8 +515,8 @@ def main() -> int:
     changed_ratio_ref = _ratio(changed_ref, observed_ref)
     changed_ratio_res = _ratio(changed_res, observed_res)
 
-    ref_labels = _load_semseg_labels(ref_semseg)
-    res_labels = _load_semseg_labels(res_semseg)
+    ref_labels = load_semseg_labels(ref_semseg)
+    res_labels = load_semseg_labels(res_semseg)
 
     ref_stats = _compute_object_stats(
         object_ids=ref_object_ids_ds,
