@@ -3,7 +3,7 @@
 Reproducible, **CUDA-free** baseline pipeline for **multi-session 3D change detection** on the 3RScan dataset:
 
 - Metadata-based alignment (`T` from `3RScan.json`) with automatic translation-scale handling (m vs mm)
-- QC metrics + reliability gate (to handle partial overlap / drift)
+- QC metrics + reliability gate (to handle partial overlap / drift); default gate uses `min(overlap_ref, overlap_rescan) >= overlap_min`
 - Comparable-region definition (only claim “unchanged” where both scans are comparable)
 - Geometry-only change heatmaps + object-level change attribution
 - Weak-label Top-K evaluation + size-bucket analysis (OBB proxy)
@@ -54,6 +54,12 @@ If you have a local smoke pair config:
 
 ```bash
 python3 scripts/run_pair.py --datasets-root Datasets --pair-config configs/pairs/smoke_pair.local.json
+```
+
+To keep the Top Objects table focused on non-structural instances:
+
+```bash
+python3 scripts/run_pair.py --datasets-root Datasets --pair-config configs/pairs/smoke_pair.local.json --exclude-labels wall,floor,ceiling
 ```
 
 Artifacts are written under `outputs/pairs/<reference>__<rescan>/`:

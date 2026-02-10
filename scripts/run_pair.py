@@ -92,6 +92,16 @@ def _ratio(numer: np.ndarray, denom: np.ndarray) -> float:
     return float(np.sum(numer)) / float(d)
 
 
+def _parse_csv_set(s: str) -> set[str]:
+    out: set[str] = set()
+    for part in str(s).split(","):
+        part = part.strip()
+        if not part:
+            continue
+        out.add(part.lower())
+    return out
+
+
 def _colors_from_heat(heat: np.ndarray, *, comparable: np.ndarray) -> np.ndarray:
     import matplotlib
 
@@ -404,6 +414,7 @@ def main() -> int:
     parser.add_argument("--top-k", type=int, default=15, help="Number of objects to report.")
     parser.add_argument("--plot-max-points", type=int, default=60000, help="Max points to plot per figure (subsampled).")
     parser.add_argument("--scale-sample-size", type=int, default=8000, help="Sample size used for translation-scale detection.")
+    parser.add_argument("--exclude-labels", default="", help="Comma-separated reference labels to exclude from Top Objects.")
     parser.add_argument("--skip-ply", action="store_true", help="Skip writing heatmap PLY files.")
     parser.add_argument("--skip-figures", action="store_true", help="Skip writing PNG figures.")
     parser.add_argument("--skip-report", action="store_true", help="Skip writing the HTML report.")
@@ -493,10 +504,15 @@ def main() -> int:
     comparable_ratio_ref = float(np.mean(observed_ref)) if observed_ref.size else 0.0
     comparable_ratio_res = float(np.mean(observed_res)) if observed_res.size else 0.0
 
-    reliable = overlap_mean >= float(args.overlap_min)
+    overlap_min = float(args.overlap_min)
+    overlap_gate_value = float(min(overlap_ref, overlap_res))
+    reliable = overlap_gate_value >= overlap_min
     gate_reason = ""
     if not reliable:
-        gate_reason = f"overlap_mean={overlap_mean:.3f} < overlap_min={float(args.overlap_min):.3f}"
+        gate_reason = (
+            f"min(overlap_ref={overlap_ref:.3f}, overlap_rescan={overlap_res:.3f})"
+            f" < overlap_min={overlap_min:.3f}"
+        )
 
     # Cap inf distances for visualization/heat computation.
     d_ref_vis = np.where(np.isfinite(d_ref), d_ref, max_radius)
@@ -517,6 +533,7 @@ def main() -> int:
 
     ref_labels = load_semseg_labels(ref_semseg)
     res_labels = load_semseg_labels(res_semseg)
+    exclude_labels = _parse_csv_set(args.exclude_labels)
 
     ref_stats = _compute_object_stats(
         object_ids=ref_object_ids_ds,
@@ -538,6 +555,13 @@ def main() -> int:
     for oid in all_object_ids:
         if int(oid) <= 0:
             continue
+        label_ref = ref_labels.get(int(oid), "unknown")
+        label_rescan = res_labels.get(int(oid), "unknown")
+        if exclude_labels:
+            if label_ref.lower() in exclude_labels:
+                continue
+            if label_ref == "unknown" and label_rescan.lower() in exclude_labels:
+                continue
         r = ref_stats.get(oid, {})
         s = res_stats.get(oid, {})
         score = max(float(r.get("ratio_changed_observed", 0.0)), float(s.get("ratio_changed_observed", 0.0)))
@@ -562,8 +586,8 @@ def main() -> int:
         rows.append(
             {
                 "objectId": int(oid),
-                "label_ref": ref_labels.get(int(oid), "unknown"),
-                "label_rescan": res_labels.get(int(oid), "unknown"),
+                "label_ref": label_ref,
+                "label_rescan": label_rescan,
                 "score": f"{score:.4f}",
                 "type": change_type,
                 "type_confidence": f"{type_conf:.2f}",
@@ -605,12 +629,15 @@ def main() -> int:
         "rescan_scan_id": rescan_id,
         "split": rescan_meta.split,
         "overlap_min": float(args.overlap_min),
+        "overlap_gate": "min(overlap_ref, overlap_rescan)",
+        "overlap_gate_value": overlap_gate_value,
         "heat_cap_factor": float(args.heat_cap_factor),
         "voxel_size_m": float(args.voxel_size),
         "tau_m": float(args.tau),
         "overlap_delta_m": float(args.overlap_delta),
         "nn_search_radius_m": max_radius,
         "translation_scale_applied": scale,
+        "exclude_labels": sorted(exclude_labels),
         "min_object_support": int(args.min_object_support),
         "min_object_total": int(args.min_object_total),
         "move_translation_min": float(args.move_translation_min),
@@ -711,6 +738,8 @@ def main() -> int:
     notes.append("Heatmaps show normalized NN distance (clip(distance/tau, 0..1)) for observed points.")
     notes.append("Gray points are unobserved (no NN within nn_search_radius_m).")
     notes.append("Weak labels are treated as reference signals, not absolute ground truth.")
+    if exclude_labels:
+        notes.append(f"Excluded labels from Top Objects: {', '.join(sorted(exclude_labels))}")
     notes.append("objectId==0 is treated as background/unlabeled and excluded from Top Objects.")
     notes.append(f"Weak-label counts: rigid={len(rescan_meta.rigid)} removed={len(rescan_meta.removed)} nonrigid={len(rescan_meta.nonrigid)}")
 
@@ -724,6 +753,7 @@ def main() -> int:
         "overlap_ref": f"{overlap_ref:.3f}",
         "overlap_rescan": f"{overlap_res:.3f}",
         "overlap_mean": f"{overlap_mean:.3f}",
+        "overlap_gate_value": f"{overlap_gate_value:.3f}",
         "unchanged_ratio_ref_obs": f"{unchanged_ratio_ref:.3f}",
         "unchanged_ratio_rescan_obs": f"{unchanged_ratio_res:.3f}",
         "voxel_size_m": float(args.voxel_size),
