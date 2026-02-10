@@ -6,6 +6,7 @@ Reproducible, **CUDA-free** baseline pipeline for **multi-session 3D change dete
 - QC metrics + reliability gate (to handle partial overlap / drift)
 - Comparable-region definition (only claim “unchanged” where both scans are comparable)
 - Geometry-only change heatmaps + object-level change attribution
+- Weak-label Top-K evaluation + size-bucket analysis (OBB proxy)
 - Per-pair 1-page HTML reports + summary tables (ablation-friendly)
 
 This repo **does not** include the dataset. You must download 3RScan yourself under their Terms of Use.
@@ -69,10 +70,24 @@ Run a small batch (default: picks pairs with the most weak-labeled changes from 
 python3 scripts/run_batch.py --datasets-root Datasets --split train --limit 20 --resume
 ```
 
+To ensure coverage across multiple environments, constrain selection by reference scan id:
+
+```bash
+python3 scripts/run_batch.py --datasets-root Datasets --split train --limit 20 --max-per-reference 2 --resume
+```
+
 Then generate a summary table and a short Markdown report:
 
 ```bash
 python3 scripts/make_summary.py --datasets-root Datasets --out-root outputs --write-md
+```
+
+## Size-bucket summary (weak labels)
+
+Bucket weak-label GT objects by size using `obb.axesLengths` from the reference `semseg.v2.json`:
+
+```bash
+python3 scripts/make_size_summary.py --datasets-root Datasets --out-root outputs --reliable-only --write-md
 ```
 
 ## Ablations
@@ -81,6 +96,12 @@ Run a small `voxel_size x tau` ablation (metrics-only; skips PLY/figures/report)
 
 ```bash
 python3 scripts/run_ablation.py --datasets-root Datasets --out-root outputs/ablation --split train --limit 20 --voxel-sizes 0.01,0.02,0.05 --taus 0.05,0.1,0.2 --resume
+```
+
+Aggregate per-setting summaries into one table:
+
+```bash
+python3 scripts/make_ablation_table.py --ablation-root outputs/ablation --write-md
 ```
 
 ## Tests
