@@ -82,6 +82,12 @@ To ensure coverage across multiple environments, constrain selection by referenc
 python3 scripts/run_batch.py --datasets-root Datasets --split train --limit 20 --max-per-reference 2 --resume
 ```
 
+To keep Top Objects focused on non-structural instances:
+
+```bash
+python3 scripts/run_batch.py --datasets-root Datasets --split train --limit 20 --max-per-reference 2 --exclude-labels wall,floor,ceiling --resume
+```
+
 Then generate a summary table and a short Markdown report:
 
 ```bash

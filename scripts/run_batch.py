@@ -119,6 +119,7 @@ def main() -> int:
     parser.add_argument("--top-k", type=int, default=15)
     parser.add_argument("--plot-max-points", type=int, default=60000)
     parser.add_argument("--scale-sample-size", type=int, default=8000)
+    parser.add_argument("--exclude-labels", default="", help="Comma-separated reference labels to exclude from Top Objects.")
     parser.add_argument("--skip-ply", action="store_true")
     parser.add_argument("--skip-figures", action="store_true")
     parser.add_argument("--skip-report", action="store_true")
@@ -218,6 +219,8 @@ def main() -> int:
             "--scale-sample-size",
             str(args.scale_sample_size),
         ]
+        if args.exclude_labels:
+            cmd.extend(["--exclude-labels", str(args.exclude_labels)])
         if args.skip_ply:
             cmd.append("--skip-ply")
         if args.skip_figures:

@@ -61,6 +61,7 @@ def main() -> int:
     parser.add_argument("--move-translation-min", type=float, default=0.20)
     parser.add_argument("--top-k", type=int, default=15)
     parser.add_argument("--scale-sample-size", type=int, default=8000)
+    parser.add_argument("--exclude-labels", default="", help="Comma-separated reference labels to exclude from Top Objects.")
 
     args = parser.parse_args()
 
@@ -117,6 +118,8 @@ def main() -> int:
             str(args.top_k),
             "--scale-sample-size",
             str(args.scale_sample_size),
+            "--exclude-labels",
+            str(args.exclude_labels),
             "--skip-ply",
             "--skip-figures",
             "--skip-report",
@@ -149,4 +152,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
