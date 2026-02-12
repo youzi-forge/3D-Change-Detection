@@ -33,6 +33,42 @@ def _scan_has_semantics(scan_dir: Path) -> bool:
     return (scan_dir / "labels.instances.annotated.v2.ply").is_file() and (scan_dir / "semseg.v2.json").is_file()
 
 
+def _load_pairs_json(path: Path) -> list[Pair]:
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(raw, list):
+        raise ValueError("pairs JSON must be a list")
+
+    out: list[Pair] = []
+    for i, item in enumerate(raw):
+        if isinstance(item, str):
+            if "__" not in item:
+                raise ValueError(f"Invalid pair id at index {i}: expected 'reference__rescan'")
+            reference_scan_id, rescan_scan_id = item.split("__", 1)
+            out.append(Pair(reference_scan_id=reference_scan_id, rescan_scan_id=rescan_scan_id, split="unknown", change_count=0))
+            continue
+
+        if not isinstance(item, dict):
+            raise ValueError(f"Invalid pair entry at index {i}: expected object or string")
+
+        reference_scan_id = item.get("reference_scan_id")
+        rescan_scan_id = item.get("rescan_scan_id")
+        if not isinstance(reference_scan_id, str) or not isinstance(rescan_scan_id, str):
+            raise ValueError(f"Invalid pair entry at index {i}: missing reference_scan_id/rescan_scan_id")
+
+        split = item.get("split")
+        change_count = item.get("change_count")
+        out.append(
+            Pair(
+                reference_scan_id=reference_scan_id,
+                rescan_scan_id=rescan_scan_id,
+                split=str(split) if split is not None else "unknown",
+                change_count=int(change_count) if change_count is not None else 0,
+            )
+        )
+
+    return out
+
+
 def _collect_pairs(
     *,
     meta: list[dict[str, Any]],
@@ -106,6 +142,13 @@ def main() -> int:
     parser.add_argument("--resume", action="store_true", help="Skip pairs that already have qc.json under the output directory.")
     parser.add_argument("--dry-run", action="store_true", help="Print selected pairs and exit without running.")
     parser.add_argument("--write-pairs", help="Write selected pair ids to the given JSON file and exit.")
+    parser.add_argument(
+        "--pairs-json",
+        help=(
+            "Run an explicit list of pairs from a JSON file. The file must be a list of objects with "
+            "{reference_scan_id,rescan_scan_id} (optionally split/change_count), or a list of 'reference__rescan' strings."
+        ),
+    )
 
     # Pass-through parameters for run_pair.py
     parser.add_argument("--voxel-size", type=float, default=0.02)
@@ -129,20 +172,45 @@ def main() -> int:
     datasets_root = Path(args.datasets_root).resolve() if not Path(args.datasets_root).is_absolute() else Path(args.datasets_root)
     out_root = Path(args.out_root).resolve() if not Path(args.out_root).is_absolute() else Path(args.out_root)
 
-    meta_path = find_3rscan_json(datasets_root)
-    meta = load_3rscan_meta(meta_path)
     scans_root = datasets_root / "3RScan"
 
-    pairs = _collect_pairs(meta=meta, scans_root=scans_root, split=args.split)
-    if not pairs:
-        print("No eligible pairs found (check split selection and local semantics availability).", file=sys.stderr)
-        return 2
+    if args.pairs_json:
+        pairs_path = Path(args.pairs_json).resolve() if not Path(args.pairs_json).is_absolute() else Path(args.pairs_json)
+        try:
+            pairs = _load_pairs_json(pairs_path)
+        except Exception as e:
+            print(f"Failed to load pairs from {pairs_path}: {e}", file=sys.stderr)
+            return 2
 
-    if args.strategy == "most_changes":
-        pairs.sort(key=lambda p: (p.change_count, p.pair_id), reverse=True)
+        eligible: list[Pair] = []
+        skipped = 0
+        for p in pairs:
+            ref_dir = scans_root / p.reference_scan_id
+            res_dir = scans_root / p.rescan_scan_id
+            if not _scan_has_semantics(ref_dir) or not _scan_has_semantics(res_dir):
+                skipped += 1
+                continue
+            eligible.append(p)
+        pairs = eligible
+        if not pairs:
+            print("No eligible pairs found in pairs JSON (check local semantics availability).", file=sys.stderr)
+            return 2
+
+        print(f"Loaded {len(pairs)} eligible pairs from {pairs_path} (skipped_missing_semantics={skipped}).")
     else:
-        rng = __import__("random").Random(int(args.seed))
-        rng.shuffle(pairs)
+        meta_path = find_3rscan_json(datasets_root)
+        meta = load_3rscan_meta(meta_path)
+
+        pairs = _collect_pairs(meta=meta, scans_root=scans_root, split=args.split)
+        if not pairs:
+            print("No eligible pairs found (check split selection and local semantics availability).", file=sys.stderr)
+            return 2
+
+        if args.strategy == "most_changes":
+            pairs.sort(key=lambda p: (p.change_count, p.pair_id), reverse=True)
+        else:
+            rng = __import__("random").Random(int(args.seed))
+            rng.shuffle(pairs)
 
     pairs = _apply_selection_constraints(
         pairs,
@@ -151,7 +219,8 @@ def main() -> int:
     )
 
     pairs = pairs[: max(0, int(args.limit))]
-    print(f"Selected {len(pairs)} pairs (strategy={args.strategy}, split={args.split}).")
+    if not args.pairs_json:
+        print(f"Selected {len(pairs)} pairs (strategy={args.strategy}, split={args.split}).")
 
     if args.dry_run or args.write_pairs:
         payload = [
