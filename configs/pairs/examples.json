@@ -1,0 +1,30 @@
+[
+  {
+    "reference_scan_id": "0988ea72-eb32-2e61-8344-99e2283c2728",
+    "rescan_scan_id": "9766cbf7-6321-2e2f-81e1-2b46533c64dd",
+    "split": "validation",
+    "change_count": 14,
+    "tag": "success"
+  },
+  {
+    "reference_scan_id": "38770ca1-86d7-27b8-8619-ab66f67d9adf",
+    "rescan_scan_id": "38770ca3-86d7-27b8-85a7-7d840ffdec6a",
+    "split": "validation",
+    "change_count": 8,
+    "tag": "success"
+  },
+  {
+    "reference_scan_id": "280d8ebb-6cc6-2788-9153-98959a2da801",
+    "rescan_scan_id": "4731976c-f9f7-2a1a-95cc-31c4d1751d0b",
+    "split": "validation",
+    "change_count": 11,
+    "tag": "failure"
+  },
+  {
+    "reference_scan_id": "c7895f27-339c-2d13-836b-c12dca280261",
+    "rescan_scan_id": "c7895f29-339c-2d13-83e9-90dbe61fa8be",
+    "split": "validation",
+    "change_count": 8,
+    "tag": "failure"
+  }
+]
