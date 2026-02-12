@@ -76,6 +76,13 @@ Run a small batch (default: picks pairs with the most weak-labeled changes from 
 python3 scripts/run_batch.py --datasets-root Datasets --split train --limit 20 --resume
 ```
 
+Run an explicit, reproducible list of pairs from a JSON file:
+
+```bash
+python3 scripts/run_batch.py --datasets-root Datasets --pairs-json configs/pairs/examples.json --out-root outputs/examples --exclude-labels wall,floor,ceiling --resume
+python3 scripts/make_summary.py --datasets-root Datasets --out-root outputs/examples --write-md
+```
+
 To ensure coverage across multiple environments, constrain selection by reference scan id:
 
 ```bash
