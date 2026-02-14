@@ -83,6 +83,14 @@ python3 scripts/run_batch.py --datasets-root Datasets --pairs-json configs/pairs
 python3 scripts/make_summary.py --datasets-root Datasets --out-root outputs/examples --write-md
 ```
 
+Run the curated showcase set (includes a single intentionally-unreliable pair to demonstrate the QC gate):
+
+```bash
+python3 scripts/run_batch.py --datasets-root Datasets --pairs-json configs/pairs/showcase.json --out-root outputs/showcase --exclude-labels wall,floor,ceiling --resume
+python3 scripts/make_summary.py --datasets-root Datasets --out-root outputs/showcase --write-md
+python3 scripts/make_size_summary.py --datasets-root Datasets --out-root outputs/showcase --reliable-only --write-md
+```
+
 To ensure coverage across multiple environments, constrain selection by reference scan id:
 
 ```bash
