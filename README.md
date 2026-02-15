@@ -91,6 +91,14 @@ python3 scripts/make_summary.py --datasets-root Datasets --out-root outputs/show
 python3 scripts/make_size_summary.py --datasets-root Datasets --out-root outputs/showcase --reliable-only --write-md
 ```
 
+Pick a shortlist of representative reliable/unreliable cases for qualitative review:
+
+```bash
+python3 scripts/make_hero_list.py --datasets-root Datasets --out-root outputs/showcase --write-md
+```
+
+This writes `outputs/showcase/hero_candidates.md` with report paths and key QC stats.
+
 To ensure coverage across multiple environments, constrain selection by reference scan id:
 
 ```bash
