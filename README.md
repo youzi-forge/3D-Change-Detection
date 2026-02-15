@@ -76,6 +76,19 @@ Run a small batch (default: picks pairs with the most weak-labeled changes from 
 python3 scripts/run_batch.py --datasets-root Datasets --split train --limit 20 --resume
 ```
 
+Run a small, representative set of qualitative cases (two reliable successes + one QC-gated failure):
+
+```bash
+python3 scripts/run_batch.py --datasets-root Datasets --pairs-json configs/pairs/featured.json --out-root outputs/featured --exclude-labels wall,floor,ceiling --resume
+python3 scripts/make_summary.py --datasets-root Datasets --out-root outputs/featured --write-md
+```
+
+Open the generated reports under `outputs/featured/pairs/<reference>__<rescan>/report.html`.
+
+Notes:
+- The included failure case is expected to be marked as `unreliable` by the overlap gate (partial overlap / coverage mismatch).
+  In that regime, heatmaps and Top Objects are diagnostics, not trustworthy change claims.
+
 Run an explicit, reproducible list of pairs from a JSON file:
 
 ```bash
