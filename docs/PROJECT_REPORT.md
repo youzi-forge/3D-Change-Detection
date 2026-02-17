@@ -102,3 +102,15 @@ This repo treats such cases as *unreliable* by default and keeps outputs as diag
 - The current baseline does not run ICP refinement by default; adding a bounded ICP step is plausible future work but must be QC-aware.
 - Weak labels from `3RScan.json` are treated as reference signals, not absolute truth.
 
+## Citation
+
+If you use the 3RScan dataset, please cite:
+
+```bibtex
+@inproceedings{wald2019,
+    title={RIO: 3D Object Instance Re-Localization in Changing Indoor Environments},
+    author={Johanna Wald, Armen Avetisyan, Nassir Navab, Federico Tombari, Matthias Niessner},
+    booktitle={Proceedings IEEE International Conference on Computer Vision (ICCV)},
+    year = {2019}
+}
+```

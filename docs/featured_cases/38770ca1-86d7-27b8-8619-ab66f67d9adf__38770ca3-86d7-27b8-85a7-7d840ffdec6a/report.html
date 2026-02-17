@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>3RScan pair report: 38770ca1-86d7-27b8-8619-ab66f67d9adf vs 38770ca3-86d7-27b8-85a7-7d840ffdec6a</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 24px; color: #111; }
+    h1 { margin: 0 0 8px 0; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 6px 8px; font-size: 13px; }
+    th { background: #f6f6f6; text-align: left; }
+    figure { margin: 0; }
+    figcaption { font-size: 12px; color: #555; margin-top: 6px; }
+    img { max-width: 100%; height: auto; border: 1px solid #eee; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+    .ok { background: #e7f6ea; color: #0f5b1c; }
+    .bad { background: #fde8e8; color: #7a1b1b; }
+    code { background: #f6f6f6; padding: 1px 4px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>3RScan pair report: 38770ca1-86d7-27b8-8619-ab66f67d9adf vs 38770ca3-86d7-27b8-85a7-7d840ffdec6a</h1>
+  <div class="grid">
+    <section>
+      <h2>Summary</h2>
+      <table>
+        <tr><th>split</th><td>validation</td></tr>
+<tr><th>reference_scan_id</th><td>38770ca1-86d7-27b8-8619-ab66f67d9adf</td></tr>
+<tr><th>rescan_scan_id</th><td>38770ca3-86d7-27b8-85a7-7d840ffdec6a</td></tr>
+<tr><th>reliability</th><td>reliable</td></tr>
+<tr><th>comparable_ratio_ref</th><td>0.995</td></tr>
+<tr><th>comparable_ratio_rescan</th><td>0.971</td></tr>
+<tr><th>overlap_ref</th><td>0.837</td></tr>
+<tr><th>overlap_rescan</th><td>0.785</td></tr>
+<tr><th>overlap_mean</th><td>0.811</td></tr>
+<tr><th>overlap_gate_value</th><td>0.785</td></tr>
+<tr><th>unchanged_ratio_ref_obs</th><td>0.933</td></tr>
+<tr><th>unchanged_ratio_rescan_obs</th><td>0.910</td></tr>
+<tr><th>voxel_size_m</th><td>0.02</td></tr>
+<tr><th>tau_m</th><td>0.1</td></tr>
+<tr><th>overlap_delta_m</th><td>0.05</td></tr>
+<tr><th>nn_search_radius_m</th><td>0.5</td></tr>
+<tr><th>overlap_min</th><td>0.3</td></tr>
+<tr><th>translation_scale_applied</th><td>1.0</td></tr>
+<tr><th>runtime_sec</th><td>1.49</td></tr>
+      </table>
+    </section>
+    <section>
+      <h2>Figures</h2>
+      <figure><img src="figures/overlay.png" alt="Aligned overlay (three orthographic views)" /><figcaption>Aligned overlay (three orthographic views)</figcaption></figure>
+<figure><img src="figures/heatmap_reference.png" alt="Reference heatmap (three orthographic views)" /><figcaption>Reference heatmap (three orthographic views)</figcaption></figure>
+<figure><img src="figures/heatmap_rescan.png" alt="Rescan heatmap (three orthographic views)" /><figcaption>Rescan heatmap (three orthographic views)</figcaption></figure>
+    </section>
+    <section>
+      <h2>Top Objects</h2>
+      <table>
+        <tr><th>objectId</th><th>label_ref</th><th>label_rescan</th><th>score</th><th>type</th><th>type_confidence</th><th>ref_support_total</th><th>ref_support_observed</th><th>ref_ratio_changed_obs</th><th>ref_p95_changed_dist</th><th>res_support_total</th><th>res_support_observed</th><th>res_ratio_changed_obs</th><th>res_p95_changed_dist</th><th>low_support</th></tr>
+        <tr><td>90</td><td>bottle</td><td>unknown</td><td>1.0000</td><td>disappeared</td><td>0.90</td><td>95</td><td>71</td><td>1.0000</td><td>0.4900</td><td>0</td><td>0</td><td>0.0000</td><td>0.0000</td><td>False</td></tr>
+<tr><td>88</td><td>plant</td><td>unknown</td><td>0.9675</td><td>disappeared</td><td>0.90</td><td>123</td><td>123</td><td>0.9675</td><td>0.3194</td><td>0</td><td>0</td><td>0.0000</td><td>0.0000</td><td>False</td></tr>
+<tr><td>3</td><td>chair</td><td>chair</td><td>0.9232</td><td>moved_rigid</td><td>0.70</td><td>1031</td><td>1031</td><td>0.6702</td><td>0.2776</td><td>1162</td><td>950</td><td>0.9232</td><td>0.4807</td><td>False</td></tr>
+<tr><td>4</td><td>chair</td><td>chair</td><td>0.8577</td><td>moved_rigid</td><td>0.70</td><td>619</td><td>485</td><td>0.8577</td><td>0.4871</td><td>688</td><td>688</td><td>0.3895</td><td>0.2389</td><td>False</td></tr>
+<tr><td>73</td><td>light</td><td>unknown</td><td>0.7419</td><td>disappeared</td><td>0.90</td><td>31</td><td>31</td><td>0.7419</td><td>0.1616</td><td>0</td><td>0</td><td>0.0000</td><td>0.0000</td><td>True</td></tr>
+<tr><td>89</td><td>object</td><td>unknown</td><td>0.7067</td><td>disappeared</td><td>0.90</td><td>208</td><td>208</td><td>0.7067</td><td>0.3100</td><td>0</td><td>0</td><td>0.0000</td><td>0.0000</td><td>False</td></tr>
+<tr><td>2</td><td>table</td><td>table</td><td>0.5709</td><td>moved_rigid</td><td>0.70</td><td>1436</td><td>1417</td><td>0.5709</td><td>0.4710</td><td>1955</td><td>1779</td><td>0.4469</td><td>0.4554</td><td>False</td></tr>
+<tr><td>74</td><td>light</td><td>unknown</td><td>0.5152</td><td>disappeared</td><td>0.90</td><td>33</td><td>33</td><td>0.5152</td><td>0.1352</td><td>0</td><td>0</td><td>0.0000</td><td>0.0000</td><td>True</td></tr>
+<tr><td>25</td><td>object</td><td>object</td><td>0.1160</td><td>nonrigid_or_recon</td><td>0.50</td><td>755</td><td>755</td><td>0.0000</td><td>0.0000</td><td>793</td><td>793</td><td>0.1160</td><td>0.1676</td><td>False</td></tr>
+<tr><td>33</td><td>window</td><td>window</td><td>0.1068</td><td>moved_rigid</td><td>0.70</td><td>1215</td><td>1215</td><td>0.0354</td><td>0.1878</td><td>1676</td><td>1676</td><td>0.1068</td><td>0.3538</td><td>False</td></tr>
+<tr><td>64</td><td>doorframe</td><td>doorframe</td><td>0.1060</td><td>nonrigid_or_recon</td><td>0.50</td><td>795</td><td>795</td><td>0.0000</td><td>0.0000</td><td>1349</td><td>1349</td><td>0.1060</td><td>0.1749</td><td>False</td></tr>
+<tr><td>83</td><td>item</td><td>item</td><td>0.1017</td><td>nonrigid_or_recon</td><td>0.50</td><td>125</td><td>125</td><td>0.0000</td><td>0.0000</td><td>59</td><td>59</td><td>0.1017</td><td>0.1273</td><td>False</td></tr>
+<tr><td>72</td><td>light</td><td>light</td><td>0.0968</td><td>disappeared</td><td>0.90</td><td>31</td><td>31</td><td>0.0968</td><td>0.1192</td><td>1</td><td>1</td><td>0.0000</td><td>0.0000</td><td>True</td></tr>
+<tr><td>36</td><td>sink</td><td>sink</td><td>0.0880</td><td>nonrigid_or_recon</td><td>0.50</td><td>2124</td><td>2124</td><td>0.0880</td><td>0.2300</td><td>1591</td><td>1591</td><td>0.0132</td><td>0.1353</td><td>False</td></tr>
+<tr><td>15</td><td>kitchen cabinet</td><td>kitchen cabinet</td><td>0.0837</td><td>nonrigid_or_recon</td><td>0.50</td><td>2318</td><td>2318</td><td>0.0837</td><td>0.2126</td><td>1949</td><td>1949</td><td>0.0262</td><td>0.2105</td><td>False</td></tr>
+      </table>
+    </section>
+    <section>
+      <h2>Notes</h2>
+      <ul>
+        <li>Heatmaps show normalized NN distance (clip(distance/tau, 0..1)) for observed points.</li>
+<li>Gray points are unobserved (no NN within nn_search_radius_m).</li>
+<li>Weak labels are treated as reference signals, not absolute ground truth.</li>
+<li>Excluded labels from Top Objects: ceiling, floor, wall</li>
+<li>objectId==0 is treated as background/unlabeled and excluded from Top Objects.</li>
+<li>Weak-label counts: rigid=8 removed=0 nonrigid=0</li>
+      </ul>
+    </section>
+  </div>
+</body>
+</html>

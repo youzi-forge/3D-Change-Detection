@@ -35,6 +35,10 @@ This repo ships a small, representative set of cases (two reliable successes + o
 
 - `configs/pairs/featured.json`
 
+For quick browsing on GitHub, see:
+
+- `docs/FEATURED_CASES.md`
+
 Run them and open the local report pages:
 
 ```bash
@@ -48,6 +52,9 @@ Then open:
 
 Note: the included failure case is expected to be marked as `unreliable` by the overlap gate (partial overlap / coverage mismatch).
 In that regime, heatmaps and Top Objects are diagnostics, not trustworthy change claims.
+
+The rendered report pages are committed under `docs/featured_cases/<pair_id>/report.html` together with their figures.
+GitHub shows HTML as source; for the best experience, open the files locally after cloning (or serve `docs/` as a static site).
 
 ## Results snapshot (reference run)
 
@@ -83,6 +90,19 @@ Notes:
 - The dataset is **flat by scanId**. Reference↔rescan relationships live in `3RScan.json`.
 - `labels.instances.annotated.v2.ply` can contain `objectId==0` (background/unlabeled). This pipeline excludes it from "Top Objects".
 - Some **test rescans** may not include semantic files; this pipeline targets **train/validation** for object-level attribution.
+
+## Citation
+
+If you use the 3RScan dataset, please cite:
+
+```bibtex
+@inproceedings{wald2019,
+    title={RIO: 3D Object Instance Re-Localization in Changing Indoor Environments},
+    author={Johanna Wald, Armen Avetisyan, Nassir Navab, Federico Tombari, Matthias Niessner},
+    booktitle={Proceedings IEEE International Conference on Computer Vision (ICCV)},
+    year = {2019}
+}
+```
 
 ## Quickstart (data sanity check)
 
