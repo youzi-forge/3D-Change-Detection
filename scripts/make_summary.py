@@ -32,6 +32,16 @@ class SummaryRow:
     pred_count: int
 
 
+def _median(values: list[float]) -> float:
+    if not values:
+        return 0.0
+    xs = sorted(values)
+    mid = len(xs) // 2
+    if len(xs) % 2 == 1:
+        return float(xs[mid])
+    return 0.5 * (float(xs[mid - 1]) + float(xs[mid]))
+
+
 def _read_objects_csv(path: Path) -> list[int]:
     if not path.is_file():
         return []
@@ -90,6 +100,7 @@ def main() -> int:
         return 2
 
     rows: list[SummaryRow] = []
+    qc_extras: dict[str, dict[str, Any]] = {}
     for qc_path in sorted(pairs_root.glob("*/qc.json")):
         pair_dir = qc_path.parent
         qc = json.loads(qc_path.read_text(encoding="utf-8"))
@@ -121,6 +132,21 @@ def main() -> int:
             pred_count=len(pred),
         )
         rows.append(row)
+        overlap_ref = float(qc.get("overlap_ref", 0.0))
+        overlap_rescan = float(qc.get("overlap_rescan", 0.0))
+        overlap_gate_value = qc.get("overlap_gate_value", None)
+        if overlap_gate_value is None:
+            overlap_gate_value = min(overlap_ref, overlap_rescan)
+        changed_ref = float(qc.get("changed_ratio_ref", qc.get("changed_ratio_ref_obs", 0.0)))
+        changed_rescan = float(qc.get("changed_ratio_rescan", qc.get("changed_ratio_rescan_obs", 0.0)))
+        qc_extras[row.pair_id] = {
+            "overlap_ref": overlap_ref,
+            "overlap_rescan": overlap_rescan,
+            "overlap_gate_value": float(overlap_gate_value),
+            "gate_reason": str(qc.get("gate_reason", "")),
+            "comparable_min": min(row.comparable_ratio_ref, row.comparable_ratio_rescan),
+            "changed_max": max(changed_ref, changed_rescan),
+        }
 
     if not rows:
         print("No qc.json files found to summarize.", file=sys.stderr)
@@ -149,6 +175,8 @@ def main() -> int:
 
     if args.write_md:
         reliable_rows = [r for r in rows if r.reliable]
+        unreliable_rows = [r for r in rows if not r.reliable]
+
         def rate(xs: list[bool]) -> float:
             return float(sum(xs)) / float(len(xs)) if xs else 0.0
 
@@ -157,6 +185,7 @@ def main() -> int:
         md_lines.append("")
         md_lines.append(f"Pairs summarized: {len(rows)}")
         md_lines.append(f"Reliable pairs: {len(reliable_rows)}")
+        md_lines.append(f"Unreliable pairs: {len(unreliable_rows)}")
         md_lines.append("")
         md_lines.append("## Top-K hit rate (weak labels)")
         md_lines.append("")
@@ -164,6 +193,42 @@ def main() -> int:
         md_lines.append("| --- | ---: | ---: | ---: |")
         md_lines.append(f"| all | {rate([r.top3_hit for r in rows]):.3f} | {rate([r.top5_hit for r in rows]):.3f} | {rate([r.top10_hit for r in rows]):.3f} |")
         md_lines.append(f"| reliable | {rate([r.top3_hit for r in reliable_rows]):.3f} | {rate([r.top5_hit for r in reliable_rows]):.3f} | {rate([r.top10_hit for r in reliable_rows]):.3f} |")
+        md_lines.append("")
+        md_lines.append("## QC overview")
+        md_lines.append("")
+        md_lines.append(f"- Reliable rate: {len(reliable_rows)}/{len(rows)} ({(len(reliable_rows)/len(rows)):.1%})")
+        md_lines.append(f"- Median overlap_mean (reliable): {_median([r.overlap_mean for r in reliable_rows]):.3f}")
+        md_lines.append(f"- Median comparable_min (reliable): {_median([float(qc_extras[r.pair_id]['comparable_min']) for r in reliable_rows if r.pair_id in qc_extras]):.3f}")
+        md_lines.append(f"- Median changed_max (reliable): {_median([float(qc_extras[r.pair_id]['changed_max']) for r in reliable_rows if r.pair_id in qc_extras]):.3f}")
+
+        if unreliable_rows:
+            md_lines.append("")
+            md_lines.append("## Unreliable pairs (for failure analysis)")
+            md_lines.append("")
+            md_lines.append("| pair_id | overlap_gate_value | overlap_mean | comparable_min | gate_reason | report |")
+            md_lines.append("| --- | ---: | ---: | ---: | --- | --- |")
+            for r in unreliable_rows:
+                extra = qc_extras.get(r.pair_id, {})
+                md_lines.append(
+                    "| "
+                    + " | ".join(
+                        [
+                            f"`{r.pair_id}`",
+                            f"{float(extra.get('overlap_gate_value', 0.0)):.3f}",
+                            f"{r.overlap_mean:.3f}",
+                            f"{float(extra.get('comparable_min', 0.0)):.3f}",
+                            str(extra.get("gate_reason", "")).replace("|", "\\|"),
+                            f"`pairs/{r.pair_id}/report.html`",
+                        ]
+                    )
+                    + " |"
+                )
+        md_lines.append("")
+        md_lines.append("## Suggested qualitative review")
+        md_lines.append("")
+        md_lines.append("- Generate a shortlist of high-quality report candidates:")
+        md_lines.append("  - `python3 scripts/make_hero_list.py --datasets-root Datasets --out-root <out_root> --write-md`")
+        md_lines.append("- Use `configs/pairs/featured.json` for a small, representative set of success + failure cases.")
         md_lines.append("")
         md_lines.append("## Notes")
         md_lines.append("")
