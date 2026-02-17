@@ -49,6 +49,19 @@ Then open:
 Note: the included failure case is expected to be marked as `unreliable` by the overlap gate (partial overlap / coverage mismatch).
 In that regime, heatmaps and Top Objects are diagnostics, not trustworthy change claims.
 
+## Results snapshot (reference run)
+
+As an example, a reference run (2026-03-01) on the committed `configs/pairs/showcase.json` (60 pairs) produced:
+
+- Reliable pairs: 59 / 60
+- Weak-label Top-K hit rate on reliable pairs: hit@3 = 0.831, hit@5 = 0.983, hit@10 = 1.000
+- Size-bucket trend (reliable-only): smaller objects are harder to retrieve reliably at low K
+
+You can reproduce these numbers locally with the `showcase.json` commands below and inspect:
+
+- `outputs/showcase/summary.md`
+- `outputs/showcase/size_summary.md`
+
 ## Dataset layout (expected)
 
 Example layout that works out-of-the-box:
