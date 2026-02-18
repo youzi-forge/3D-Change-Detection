@@ -1,116 +1,81 @@
-# Project report: Multi-session 3D Change Detection Baseline (3RScan)
+# Project Report
 
-This document is a short, human-readable write-up meant for first-time readers of the repo.
-It complements `README.md` (which focuses on usage).
+Technical writeup for the multi-session 3D change detection baseline. For setup and usage, see the main [`README`](../README.md).
 
-## Problem framing
+## Problem
 
-Multi-session 3D change detection asks: given two captures of the same environment at different times, what changed?
-In practice, the harder question is often **verification of condition**:
+Given two 3D reconstructions of the same indoor space captured at different times, identify what changed — and be explicit about what you can't identify.
 
-- What can be confidently verified as unchanged?
-- When are results unreliable due to limited overlap, drift, or reconstruction differences?
-- Can change evidence be attributed to objects with an explainable “evidence chain”?
+The hard part is not finding differences. Aligned point clouds always differ due to reconstruction noise, viewpoint variation, and partial coverage. The hard part is deciding which differences are real and which regions are reliable enough to make any claim about.
 
-This repo implements a **CUDA-free**, geometry-only baseline on the 3RScan dataset with a strong emphasis on:
+## Method
 
-- explicit definitions (units, coordinate conventions, “comparable regions”)
-- QC metrics and reliability gating
-- object-level attribution and explainable change typing
-- reproducible artifacts and per-pair reports
+The pipeline runs six stages per scan pair. Every intermediate result is saved to disk.
 
-## Method summary
+**1. Alignment.** Apply the transform `T` from `3RScan.json` (column-major, Eigen convention). The translation component may be stored in meters or millimeters depending on the dataset release — the pipeline tests both scales against a subsampled overlap check and picks the better one.
 
-Given a reference scan and a rescan:
+**2. QC gate.** Compute bidirectional overlap ratios (fraction of points with a nearest neighbor within `overlap_delta`). The gate uses `min(overlap_ref, overlap_rescan)` rather than the mean — mean can mask asymmetric failures (e.g. ref 0.9, rescan 0.2 averages to 0.55, which looks passable but means the rescan barely covers the scene). If the min falls below `overlap_min`, the pair is marked unreliable. Unreliable pairs still produce outputs, but the report flags them and downstream consumers should treat the results as diagnostics.
 
-1) **Alignment**
-- Use the metadata transform `T` from `3RScan.json` (parsed in column-major order).
-- Automatically validate whether translation is stored in meters or millimeters by checking overlap under candidate scales.
+**3. Comparable region.** A point is "comparable" if it has a nearest neighbor within the NN search radius. This is distinct from the overlap ratio in step 2: overlap is a per-pair scalar used to decide whether the pair is trustworthy at all; the comparable region is a per-point mask that controls where the pipeline is allowed to claim "unchanged". A pair can pass the overlap gate while still having localized unobserved patches — those patches show up as gray in the heatmaps, not as false positives.
 
-2) **Comparable region**
-- Define a point as *observed/comparable* if it has a nearest neighbor within a bounded search radius.
-- Only report “unchanged” and “changed” ratios inside the comparable region.
+**4. Change heatmaps.** Bidirectional NN distances on voxel-downsampled point clouds. Distances are normalized as `clip(d / tau, 0, 1)` for visualization. The NN search uses a uniform grid (cell size = search radius, 27-cell neighborhood lookup) rather than a KD-tree — it has zero external dependencies, gives exact results within the radius, and is fast enough for the point counts here (typically 50k–200k after downsampling).
 
-3) **QC and reliability gate**
-- Compute overlap ratios `overlap_ref` and `overlap_rescan` using a distance threshold `overlap_delta`.
-- Default gate: `reliable = min(overlap_ref, overlap_rescan) >= overlap_min`.
-- When unreliable, the report explicitly states the gate reason; downstream outputs are treated as diagnostics.
+**5. Object attribution.** Each point carries an `objectId` from `labels.instances.annotated.v2.ply`. Per object, the pipeline computes: fraction of observed points exceeding `tau`, the 95th-percentile changed-point distance, and support count. Objects are ranked by change score and assigned a type:
 
-4) **Geometry change heatmaps**
-- Compute bidirectional nearest-neighbor distances (reference->rescan and rescan->reference) within the search radius.
-- Visualize normalized distances via `clip(distance / tau, 0..1)`; unobserved points are rendered in gray.
+| Type | Heuristic |
+|---|---|
+| `appeared` | Present in rescan, absent or below support threshold in reference |
+| `disappeared` | Present in reference, absent in rescan |
+| `moved_rigid` | Both present, centroid shift exceeds threshold |
+| `nonrigid_or_recon` | High change score but no large centroid shift — could be deformation or reconstruction noise |
 
-5) **Object-level attribution**
-- Each point carries an `objectId` from `labels.instances.annotated.v2.ply`.
-- Change evidence votes onto objects, producing a Top-K table with scores, support, and a lightweight change type:
-  - `appeared`, `disappeared`, `moved_rigid`, `nonrigid_or_recon`, `unknown`
+**6. Reporting.** Per-pair HTML reports show: reliability badge, QC metrics, aligned overlay (three orthographic views), reference/rescan heatmaps, and the Top-K object table. Batch summaries aggregate weak-label hit rates.
 
-6) **Reports and summaries**
-- Per pair: `report.html` (QC + overlay + heatmaps + Top objects).
-- Per run: `summary.csv` and `summary.md` (weak-label Top-K hit rates).
-- Optional: `size_summary.md` (weak-label hit rates bucketed by object size using OBB proxies).
+**Default parameters.** The defaults (`voxel_size=0.02 m`, `tau=0.1 m`, `overlap_delta=0.05 m`) were selected via a `voxel_size x tau` grid ablation on train-split pairs — see `scripts/run_ablation.py`. `overlap_min=0.3` is conservative: it passes most well-captured pairs while catching severe coverage mismatches. All parameters are configurable via CLI flags.
 
-## Results snapshot (reference run)
+## Evaluation
 
-The pipeline is designed to be reproducible, but numeric results depend on the chosen pair list and parameters.
-As an example, a reference run (2026-03-01) on the committed `configs/pairs/showcase.json` (60 pairs) produced:
+Weak labels from `3RScan.json` — `removed`, `nonrigid`, and `rigid` instance lists — serve as noisy reference signals. The primary metric is **Top-K hit rate**: does any of the top K predicted objects appear in the weak-label change set?
 
-- Reliable pairs: 59 / 60 (one intentionally low-overlap failure case)
-- Weak-label Top-K hit rate (reliable pairs): hit@3 = 0.831, hit@5 = 0.983, hit@10 = 1.000
+### Reference run (2026-03-01)
 
-Size-bucket trends (reliable-only, size proxy = `max(obb.axesLengths)`):
+Dataset: `configs/pairs/showcase.json`, 60 pairs.
 
-- Smaller objects are harder to retrieve reliably at low K (consistent with a geometry-only baseline + downsampling).
+**Hit rates (reliable pairs, N=59):**
 
-To reproduce these numbers locally, run:
+| hit@3 | hit@5 | hit@10 |
+|---:|---:|---:|
+| 0.831 | 0.983 | 1.000 |
+
+**Size-bucket trend** (object size = `max(obb.axesLengths)` from `semseg.v2.json`, reliable pairs only):
+
+Small objects (< 0.3 m) are harder to retrieve at low K. This is expected — voxel downsampling at 2 cm reduces point support for small objects, and geometry-only NN distances are noisier at that scale. By hit@10, retrieval is near-perfect across all sizes.
+
+To reproduce:
 
 ```bash
-python3 scripts/run_batch.py --datasets-root Datasets --pairs-json configs/pairs/showcase.json --out-root outputs/showcase --exclude-labels wall,floor,ceiling --resume
-python3 scripts/make_summary.py --datasets-root Datasets --out-root outputs/showcase --write-md
-python3 scripts/make_size_summary.py --datasets-root Datasets --out-root outputs/showcase --reliable-only --write-md
+python3 scripts/run_batch.py --datasets-root Datasets \
+  --pairs-json configs/pairs/showcase.json \
+  --out-root outputs/showcase \
+  --exclude-labels wall,floor,ceiling --resume
+
+python3 scripts/make_summary.py --datasets-root Datasets \
+  --out-root outputs/showcase --write-md
+
+python3 scripts/make_size_summary.py --datasets-root Datasets \
+  --out-root outputs/showcase --reliable-only --write-md
 ```
 
-## Representative cases
+## Failure modes
 
-This repo includes a small set of representative qualitative cases:
+**Partial overlap.** The most common failure. If only a fraction of the scene is observed in both sessions, naive NN differencing flags large regions as changed. The QC gate catches this — in the reference run, the single intentionally low-overlap pair was correctly marked unreliable (overlap gate value 0.246, threshold 0.300).
 
-- `configs/pairs/featured.json`
+When a pair is unreliable, the report header says so and prints the gate values. The object table is still populated but should not be read as trusted predictions.
 
-After running them, open:
+**Reconstruction noise on large surfaces.** Walls and floors can show non-zero NN distances from scan-to-scan variation in surface reconstruction. The `--exclude-labels wall,floor,ceiling` flag mitigates this for the object ranking, but it does not affect the heatmaps themselves.
 
-- `outputs/featured/pairs/<reference>__<rescan>/report.html`
+## Limitations
 
-The report pages are the intended “portfolio artifact”: each one is a compact evidence chain that shows:
-
-- whether the pair is reliable (and why)
-- where the comparable region is (gray vs colored points)
-- where geometric change evidence concentrates
-- which object instances are most implicated and how they are typed
-
-## Failure mode (why QC gating matters)
-
-A common failure mode in multi-session scans is **partial overlap / coverage mismatch**:
-
-- If only a small fraction of the scene is observed in both sessions, naive geometric differencing will report large “changes”.
-- In the reports, this typically manifests as a large fraction of `appeared`/`disappeared` objects driven by unobserved regions.
-
-This repo treats such cases as *unreliable* by default and keeps outputs as diagnostics rather than claims.
-
-## Limitations and next steps
-
-- This is a geometry-only baseline; it cannot reliably separate non-rigid change from reconstruction differences.
-- The current baseline does not run ICP refinement by default; adding a bounded ICP step is plausible future work but must be QC-aware.
-- Weak labels from `3RScan.json` are treated as reference signals, not absolute truth.
-
-## Citation
-
-If you use the 3RScan dataset, please cite:
-
-```bibtex
-@inproceedings{wald2019,
-    title={RIO: 3D Object Instance Re-Localization in Changing Indoor Environments},
-    author={Johanna Wald, Armen Avetisyan, Nassir Navab, Federico Tombari, Matthias Niessner},
-    booktitle={Proceedings IEEE International Conference on Computer Vision (ICCV)},
-    year = {2019}
-}
-```
+- **Geometry-only.** Without appearance or semantic cues, the pipeline cannot distinguish non-rigid physical change from reconstruction artifacts. The `nonrigid_or_recon` label is deliberately ambiguous about this.
+- **No ICP refinement.** The metadata transform is used as-is. A bounded ICP step could improve alignment for borderline pairs but would need its own QC to avoid degrading good alignments.
+- **Downsampling drops small objects.** At `voxel_size = 0.02 m`, objects smaller than ~5 cm may retain too few points for stable attribution.
