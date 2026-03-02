@@ -20,11 +20,11 @@ Most 3D change detection work focuses on learned models that are hard to inspect
 
 ## How it works
 
-Given a reference scan and a rescan of the same space:
+Given a reference scan and a rescan of the same space, the pipeline first determines whether and where the comparison is trustworthy, then computes change evidence within the trusted region:
 
 1. **Align** using the metadata transform from `3RScan.json`, with automatic meter/millimeter scale detection
 2. **QC gate** — compute overlap ratios; mark the pair as unreliable if overlap is too low
-3. **Comparable region** — only report change where both scans actually observe the same area
+3. **Comparable region** — per-point mask: only allow change claims where both scans actually observe the same area
 4. **Change heatmaps** — bidirectional nearest-neighbor distances on voxel-downsampled point clouds
 5. **Object attribution** — vote change evidence onto instances via per-point `objectId`, rank by score, assign types: `appeared` / `disappeared` / `moved_rigid` / `nonrigid_or_recon`
 6. **Report** — per-pair HTML page with figures + batch summary tables

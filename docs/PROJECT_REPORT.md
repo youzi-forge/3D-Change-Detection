@@ -10,7 +10,7 @@ The hard part is not finding differences. Aligned point clouds always differ due
 
 ## Method
 
-The pipeline runs six stages per scan pair. Every intermediate result is saved to disk.
+The pipeline runs six stages per scan pair. Every intermediate result is saved to disk. Stage 1 produces an alignment; stages 2–3 determine *where and whether* the comparison is trustworthy; stages 4–6 compute and report change evidence within the trusted region.
 
 **1. Alignment.** Apply the transform `T` from `3RScan.json` (column-major, Eigen convention). The translation component may be stored in meters or millimeters depending on the dataset release — the pipeline tests both scales against a subsampled overlap check and picks the better one.
 
