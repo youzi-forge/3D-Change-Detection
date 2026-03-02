@@ -406,7 +406,12 @@ def main() -> int:
     parser.add_argument("--voxel-size", type=float, default=0.02, help="Voxel size in meters for downsampling.")
     parser.add_argument("--tau", type=float, default=0.10, help="Change threshold tau in meters.")
     parser.add_argument("--overlap-delta", type=float, default=0.05, help="Overlap/comparable threshold in meters.")
-    parser.add_argument("--overlap-min", type=float, default=0.30, help="Reliability gate threshold on overlap_mean.")
+    parser.add_argument(
+        "--overlap-min",
+        type=float,
+        default=0.30,
+        help="Reliability gate threshold on min(overlap_ref, overlap_rescan).",
+    )
     parser.add_argument("--heat-cap-factor", type=float, default=5.0, help="Cap NN search radius at heat_cap_factor * tau.")
     parser.add_argument("--min-object-support", type=int, default=50, help="Min observed support points for stable object stats.")
     parser.add_argument("--min-object-total", type=int, default=20, help="Min total points to consider object present.")

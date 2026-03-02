@@ -23,7 +23,7 @@ Most 3D change detection work focuses on learned models that are hard to inspect
 Given a reference scan and a rescan of the same space, the pipeline first determines whether and where the comparison is trustworthy, then computes change evidence within the trusted region:
 
 1. **Align** using the metadata transform from `3RScan.json`, with automatic meter/millimeter scale detection
-2. **QC gate** — compute overlap ratios; mark the pair as unreliable if overlap is too low
+2. **QC gate** — compute overlap ratios; mark the pair as unreliable if the minimum directional overlap is too low
 3. **Comparable region** — per-point mask: only allow change claims where both scans actually observe the same area
 4. **Change heatmaps** — bidirectional nearest-neighbor distances on voxel-downsampled point clouds
 5. **Object attribution** — vote change evidence onto instances via per-point `objectId`, rank by score, assign types: `appeared` / `disappeared` / `moved_rigid` / `nonrigid_or_recon`
@@ -37,7 +37,7 @@ Per pair (`outputs/<run>/pairs/<reference>__<rescan>/`):
 
 | File | Contents |
 |---|---|
-| `qc.json` | Overlap ratios, comparable ratios, reliability verdict |
+| `qc.json` | Overlap ratios, comparable ratios, reliability verdict, and overlap-gate value |
 | `alignment.json` | Applied transform, scale detection details |
 | `objects.csv` | Top-K objects with scores, change types, support counts |
 | `report.html` + `figures/` | One-page report with overlay, heatmaps, object table |

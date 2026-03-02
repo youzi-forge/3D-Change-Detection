@@ -68,7 +68,7 @@ python3 scripts/make_size_summary.py --datasets-root Datasets \
 
 ## Failure modes
 
-**Partial overlap.** The most common failure. If only a fraction of the scene is observed in both sessions, naive NN differencing flags large regions as changed. The QC gate catches this — in the reference run, the single intentionally low-overlap pair was correctly marked unreliable (overlap gate value 0.246, threshold 0.300).
+**Partial overlap.** The most common failure. If only a fraction of the scene is observed in both sessions, naive NN differencing flags large regions as changed. The QC gate is designed to catch this. In the reference run, the single intentionally low-overlap pair was marked unreliable (overlap gate value 0.246, threshold 0.300). Note that the showcase set was curated toward reliable pairs, so this is a sanity check on the gate, not a systematic evaluation of its false-negative rate.
 
 When a pair is unreliable, the report header says so and prints the gate values. The object table is still populated but should not be read as trusted predictions.
 
