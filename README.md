@@ -45,9 +45,9 @@ Per pair (`outputs/<run>/pairs/<reference>__<rescan>/`):
 
 Per run: `summary.csv` and `summary.md` with weak-label hit rates.
 
-## Reference results (2026-03-01)
+## Reference results (current status)
 
-60 curated pairs from `configs/pairs/showcase.json`:
+60 curated pairs from `configs/pairs/showcase.json`: 
 
 - Reliable: 59 / 60 (one intentionally low-overlap pair to test the gate)
 - hit@3 = 0.831, hit@5 = 0.983, hit@10 = 1.000 (reliable pairs only)
